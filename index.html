@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <script>
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker
+                    .register("./service-worker.js")
+                    .then((registration) => {
+                        console.log(
+                            "ServiceWorker registration successful with scope: ",
+                            registration.scope,
+                        );
+                    })
+                    .catch((error) => {
+                        console.log(
+                            "ServiceWorker registration failed: ",
+                            error,
+                        );
+                    });
+            }
+        </script>
+        <link rel="manifest" href="./manifest.json" />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#ffffff" />
+        <link rel="manifest" href="/manifest.json" />
+        <title>Prediction Calibration</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 100vh;
+                background-color: #f5f5f5;
+            }
+            header {
+                width: 100%;
+                padding: 1em;
+                background-color: #6200ea;
+                color: white;
+                text-align: center;
+            }
+            main {
+                width: 90%;
+                max-width: 600px;
+                flex: 1;
+                padding: 1em;
+                background: white;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                margin: 1em;
+                border-radius: 8px;
+            }
+            .prediction {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.5em 0;
+                border-bottom: 1px solid #ddd;
+            }
+            .prediction:last-child {
+                border-bottom: none;
+            }
+            button {
+                padding: 0.5em 1em;
+                margin: 0.5em 0;
+                background: #6200ea;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            button:disabled {
+                background: #ccc;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Prediction Calibration</h1>
+        </header>
+        <main>
+            <section id="add-prediction">
+                <h2>Add Prediction</h2>
+                <textarea
+                    id="prediction-input"
+                    rows="3"
+                    placeholder="Enter your prediction..."
+                ></textarea>
+                <div>
+                    <label for="confidence">Confidence:</label>
+                    <select id="confidence">
+                        <option value="55">55%</option>
+                        <option value="65">65%</option>
+                        <option value="75">75%</option>
+                        <option value="85">85%</option>
+                        <option value="95">95%</option>
+                    </select>
+                </div>
+                <button id="add-prediction-btn">Add Prediction</button>
+            </section>
+            <section id="predictions-list">
+                <h2>Your Predictions</h2>
+                <div id="predictions"></div>
+            </section>
+            <section id="calibration-stats">
+                <h2>Calibration Stats</h2>
+                <div id="stats"></div>
+            </section>
+        </main>
+        <script>
+            let predictions =
+                JSON.parse(localStorage.getItem("predictions")) || [];
+
+            const renderPredictions = () => {
+                const predictionsContainer =
+                    document.getElementById("predictions");
+                predictionsContainer.innerHTML = "";
+
+                predictions.forEach((prediction, index) => {
+                    const predictionDiv = document.createElement("div");
+                    predictionDiv.classList.add("prediction");
+
+                    predictionDiv.innerHTML = `
+          <span>${prediction.text} (${prediction.confidence}% confident)</span>
+          <div>
+            <button onclick="resolvePrediction(${index}, true)">Correct</button>
+            <button onclick="resolvePrediction(${index}, false)">Incorrect</button>
+          </div>
+        `;
+                    predictionsContainer.appendChild(predictionDiv);
+                });
+            };
+
+            const resolvePrediction = (index, isCorrect) => {
+                predictions[index].resolved = true;
+                predictions[index].correct = isCorrect;
+                localStorage.setItem(
+                    "predictions",
+                    JSON.stringify(predictions),
+                );
+                renderPredictions();
+                updateStats();
+            };
+
+            const addPrediction = () => {
+                const text = document.getElementById("prediction-input").value;
+                const confidence = document.getElementById("confidence").value;
+                if (!text) return;
+
+                predictions.push({ text, confidence, resolved: false });
+                localStorage.setItem(
+                    "predictions",
+                    JSON.stringify(predictions),
+                );
+                renderPredictions();
+                document.getElementById("prediction-input").value = "";
+            };
+
+            const updateStats = () => {
+                const statsContainer = document.getElementById("stats");
+                statsContainer.innerHTML = "";
+
+                const confidenceGroups = [55, 65, 75, 85, 95];
+                confidenceGroups.forEach((confidence) => {
+                    const group = predictions.filter(
+                        (p) => p.confidence == confidence && p.resolved,
+                    );
+                    const correct = group.filter((p) => p.correct).length;
+                    const total = group.length;
+                    const percentage = total
+                        ? ((correct / total) * 100).toFixed(2)
+                        : 0;
+
+                    const statDiv = document.createElement("div");
+                    statDiv.textContent = `${confidence}%: ${percentage}% (${correct}/${total})`;
+                    statsContainer.appendChild(statDiv);
+                });
+            };
+
+            document
+                .getElementById("add-prediction-btn")
+                .addEventListener("click", addPrediction);
+
+            renderPredictions();
+            updateStats();
+        </script>
+    </body>
+</html>
