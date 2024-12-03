@@ -82,6 +82,10 @@
             <h1>Prediction Calibration</h1>
         </header>
         <main>
+            <section id="predictions-list">
+                <h2>Your Predictions</h2>
+                <div id="predictions"></div>
+            </section>
             <section id="add-prediction">
                 <h2>Add Prediction</h2>
                 <textarea
@@ -101,13 +105,13 @@
                 </div>
                 <button id="add-prediction-btn">Add Prediction</button>
             </section>
-            <section id="predictions-list">
-                <h2>Your Predictions</h2>
-                <div id="predictions"></div>
-            </section>
             <section id="calibration-stats">
                 <h2>Calibration Stats</h2>
                 <div id="stats"></div>
+            </section>
+            <section id="resolved-predictions">
+                <h2>Resolved Predictions</h2>
+                <div id="resolved"></div>
             </section>
         </main>
         <script>
@@ -120,18 +124,36 @@
                 predictionsContainer.innerHTML = "";
 
                 predictions.forEach((prediction, index) => {
-                    const predictionDiv = document.createElement("div");
-                    predictionDiv.classList.add("prediction");
+                    if (!prediction.resolved) {
+                        const predictionDiv = document.createElement("div");
+                        predictionDiv.classList.add("prediction");
 
-                    predictionDiv.innerHTML = `
+                        predictionDiv.innerHTML = `
           <span>${prediction.text} (${prediction.confidence}% confident)</span>
           <div>
             <button onclick="resolvePrediction(${index}, true)">Correct</button>
             <button onclick="resolvePrediction(${index}, false)">Incorrect</button>
           </div>
         `;
-                    predictionsContainer.appendChild(predictionDiv);
+                        predictionsContainer.appendChild(predictionDiv);
+                    }
                 });
+
+                renderResolvedPredictions();
+            };
+
+            const renderResolvedPredictions = () => {
+                const resolvedContainer = document.getElementById("resolved");
+                resolvedContainer.innerHTML = "";
+
+                predictions
+                    .filter((p) => p.resolved)
+                    .forEach((prediction) => {
+                        const predictionDiv = document.createElement("div");
+                        predictionDiv.classList.add("prediction");
+                        predictionDiv.textContent = `${prediction.text} (${prediction.confidence}% confident) - ${prediction.correct ? "Correct" : "Incorrect"}`;
+                        resolvedContainer.appendChild(predictionDiv);
+                    });
             };
 
             const resolvePrediction = (index, isCorrect) => {
@@ -174,8 +196,17 @@
                         ? ((correct / total) * 100).toFixed(2)
                         : 0;
 
+                    let calibration = "";
+                    if (percentage > confidence + 5) {
+                        calibration = "Overconfident";
+                    } else if (percentage < confidence - 5) {
+                        calibration = "Underconfident";
+                    } else {
+                        calibration = "Calibrated";
+                    }
+
                     const statDiv = document.createElement("div");
-                    statDiv.textContent = `${confidence}%: ${percentage}% (${correct}/${total})`;
+                    statDiv.textContent = `${confidence}%: ${calibration} (${correct}/${total})`;
                     statsContainer.appendChild(statDiv);
                 });
             };
