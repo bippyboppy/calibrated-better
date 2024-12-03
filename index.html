@@ -91,6 +91,7 @@
                 <textarea
                     id="prediction-input"
                     rows="3"
+                    cols="80"
                     placeholder="Enter your prediction..."
                 ></textarea>
                 <div>
@@ -148,10 +149,10 @@
 
                 predictions
                     .filter((p) => p.resolved)
-                    .forEach((prediction) => {
+                    .forEach((prediction, index) => {
                         const predictionDiv = document.createElement("div");
                         predictionDiv.classList.add("prediction");
-                        predictionDiv.textContent = `${prediction.text} (${prediction.confidence}% confident) - ${prediction.correct ? "Correct" : "Incorrect"}`;
+                        predictionDiv.innerHTML = `${prediction.text} (${prediction.confidence}% confident) - ${prediction.correct ? "Correct" : "Incorrect"} <button onclick="deletePrediction(${index})">Delete</button>`;
                         resolvedContainer.appendChild(predictionDiv);
                     });
             };
@@ -159,6 +160,16 @@
             const resolvePrediction = (index, isCorrect) => {
                 predictions[index].resolved = true;
                 predictions[index].correct = isCorrect;
+                localStorage.setItem(
+                    "predictions",
+                    JSON.stringify(predictions),
+                );
+                renderPredictions();
+                updateStats();
+            };
+
+            const deletePrediction = (index) => {
+                predictions.splice(index, 1);
                 localStorage.setItem(
                     "predictions",
                     JSON.stringify(predictions),
@@ -198,11 +209,11 @@
 
                     let calibration = "";
                     if (percentage > confidence + 5) {
-                        calibration = "Overconfident";
+                        calibration = "Overcalibrated";
                     } else if (percentage < confidence - 5) {
-                        calibration = "Underconfident";
+                        calibration = "Undercalibrated";
                     } else {
-                        calibration = "Calibrated";
+                        calibration = "Well-calibrated";
                     }
 
                     const statDiv = document.createElement("div");
