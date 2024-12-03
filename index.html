@@ -91,7 +91,7 @@
                 <textarea
                     id="prediction-input"
                     rows="3"
-                    cols="80"
+                    cols="80%"
                     placeholder="Enter your prediction..."
                 ></textarea>
                 <div>
@@ -209,11 +209,11 @@
 
                     let calibration = "";
                     if (percentage > confidence + 5) {
-                        calibration = "Overcalibrated";
+                        calibration = "Overconfident";
                     } else if (percentage < confidence - 5) {
-                        calibration = "Undercalibrated";
+                        calibration = "Underconfident";
                     } else {
-                        calibration = "Well-calibrated";
+                        calibration = "Calibrated";
                     }
 
                     const statDiv = document.createElement("div");
